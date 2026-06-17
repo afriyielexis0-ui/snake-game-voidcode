@@ -14,13 +14,14 @@ function fmtTime(s: number) {
 }
 
 export default function Game({ onGameOver, levelIdx }: GameProps) {
-  const { snake, food, score, elapsed, cols, rows, predator, obstacles, slowed } = useSnake(onGameOver, levelIdx);
+  const { snake, foods, score, elapsed, cols, rows, predator, obstacles, slowed } = useSnake(onGameOver, levelIdx);
   const lvl = LEVELS[levelIdx];
 
   const snakeSet = new Set(snake.map(s => `${s.x},${s.y}`));
   const obstacleSet = new Set(obstacles.map(o => `${o.x},${o.y}`));
   const isHead = (x: number, y: number) => snake[0].x === x && snake[0].y === y;
   const isPredator = (x: number, y: number) => predator.x === x && predator.y === y;
+  const getFoodEmoji = (x: number, y: number) => foods.find(f => f.x === x && f.y === y)?.emoji ?? null;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.75rem" }}>
@@ -64,7 +65,8 @@ export default function Game({ onGameOver, levelIdx }: GameProps) {
           Array.from({ length: cols }, (_, x) => {
             const key = `${x},${y}`;
             const isSnake = snakeSet.has(key);
-            const isFood = food.x === x && food.y === y;
+            const foodEmoji = getFoodEmoji(x, y);
+            const isFood = foodEmoji !== null;
             const head = isHead(x, y);
             const pred = isPredator(x, y);
             const isObstacle = obstacleSet.has(key);
@@ -91,8 +93,8 @@ export default function Game({ onGameOver, levelIdx }: GameProps) {
                   border: isObstacle && !isSnake && !pred ? "1px solid #3d2800" : undefined,
                 }}
               >
-                {isFood && !pred && "🍎"}
-                {pred && "🐻"}
+                {isFood && !pred && foodEmoji}
+                {pred && "🐘"}
                 {isObstacle && !isFood && !isSnake && !pred && "🪨"}
               </div>
             );
@@ -101,7 +103,7 @@ export default function Game({ onGameOver, levelIdx }: GameProps) {
       </div>
 
       <p style={{ color: "#2a2a2a", fontSize: "0.65rem", letterSpacing: "0.12em" }}>
-        ARROW KEYS / WASD &nbsp;·&nbsp; 🐻 CHASES YOU &nbsp;·&nbsp; 🪨 SLOWS YOU DOWN
+        ARROW KEYS / WASD &nbsp;·&nbsp; 🐘 CHASES YOU &nbsp;·&nbsp; 🪨 SLOWS YOU DOWN
       </p>
     </div>
   );

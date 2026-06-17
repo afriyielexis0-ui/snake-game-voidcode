@@ -15,6 +15,9 @@ export const ROWS = 20;
 
 export const NUM_OBSTACLES = 6;
 
+export const FOOD_TYPES = ["🍎", "🍌", "🍒"] as const;
+export type FoodItem = Pos & { emoji: string };
+
 function randomPos(excluded: Pos[]): Pos {
   let pos: Pos;
   do {
@@ -23,12 +26,20 @@ function randomPos(excluded: Pos[]): Pos {
   return pos;
 }
 
-function generateObstacles(snake: Pos[], food: Pos): Pos[] {
+function generateObstacles(snake: Pos[], foods: Pos[]): Pos[] {
   const obstacles: Pos[] = [];
   for (let i = 0; i < NUM_OBSTACLES; i++) {
-    obstacles.push(randomPos([...snake, food, ...obstacles]));
+    obstacles.push(randomPos([...snake, ...foods, ...obstacles]));
   }
   return obstacles;
+}
+
+function initFoods(snake: Pos[]): FoodItem[] {
+  const items: FoodItem[] = [];
+  for (let i = 0; i < FOOD_TYPES.length; i++) {
+    items.push({ ...randomPos([...snake, ...items]), emoji: FOOD_TYPES[i] });
+  }
+  return items;
 }
 
 // Simple BFS-based chaser: move predator one step toward snake head
@@ -79,12 +90,12 @@ function chaseStep(predator: Pos, target: Pos, obstacles: Pos[], snake: Pos[]): 
 export function useSnake(onGameOver: (score: number, time: number) => void, levelIdx: number) {
   const tick = LEVELS[levelIdx].tick;
   const initSnake: Pos[] = [{ x: 10, y: 10 }, { x: 9, y: 10 }, { x: 8, y: 10 }];
-  const initFood = randomPos(initSnake);
-  const initObstacles = generateObstacles(initSnake, initFood);
+  const initFoodItems = initFoods(initSnake);
+  const initObstacles = generateObstacles(initSnake, initFoodItems);
   const initPredator: Pos = { x: 0, y: 0 };
 
   const [snake, setSnake] = useState<Pos[]>(initSnake);
-  const [food, setFood] = useState<Pos>(initFood);
+  const [foods, setFoods] = useState<FoodItem[]>(initFoodItems);
   const [obstacles, setObstacles] = useState<Pos[]>(initObstacles);
   const [predator, setPredator] = useState<Pos>(initPredator);
   const [score, setScore] = useState(0);
@@ -101,7 +112,7 @@ export function useSnake(onGameOver: (score: number, time: number) => void, leve
 
   // refs for use inside callbacks
   const snakeRef = useRef(initSnake);
-  const foodRef = useRef(initFood);
+  const foodsRef = useRef(initFoodItems);
   const obstaclesRef = useRef(initObstacles);
   const predatorRef = useRef(initPredator);
   const scoreRef = useRef(0);
@@ -159,17 +170,24 @@ export function useSnake(onGameOver: (score: number, time: number) => void, leve
 
     // Food collision
     let newSnake: Pos[];
-    const f = foodRef.current;
-    if (f.x === next.x && f.y === next.y) {
+    const curFoods = foodsRef.current;
+    const hitIdx = curFoods.findIndex(f => f.x === next.x && f.y === next.y);
+
+    if (hitIdx !== -1) {
       const grown = [next, ...prev];
       newSnake = grown;
       scoreRef.current += 10;
       setScore(scoreRef.current);
-      const newFood = randomPos([...grown, ...obs]);
-      foodRef.current = newFood;
-      setFood(newFood);
+      const otherFoods = curFoods.filter((_, i) => i !== hitIdx);
+      const newFood: FoodItem = {
+        ...randomPos([...grown, ...obs, ...otherFoods]),
+        emoji: curFoods[hitIdx].emoji,
+      };
+      const newFoods = curFoods.map((f, i) => i === hitIdx ? newFood : f);
+      foodsRef.current = newFoods;
+      setFoods(newFoods);
       // Refresh obstacles on each food eat
-      const newObs = generateObstacles(grown, newFood);
+      const newObs = generateObstacles(grown, newFoods);
       obstaclesRef.current = newObs;
       setObstacles(newObs);
     } else {
@@ -216,5 +234,5 @@ export function useSnake(onGameOver: (score: number, time: number) => void, leve
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  return { snake, food, score, elapsed, cols: COLS, rows: ROWS, predator, obstacles, slowed };
+  return { snake, foods, score, elapsed, cols: COLS, rows: ROWS, predator, obstacles, slowed };
 }
