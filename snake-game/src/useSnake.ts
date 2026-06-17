@@ -15,7 +15,7 @@ export const ROWS = 20;
 
 export const NUM_OBSTACLES = 6;
 
-export const FOOD_TYPES = ["🍎", "🍌", "🍒"] as const;
+export const FOOD_TYPES = ["🍎", "🍒"] as const;
 export type FoodItem = Pos & { emoji: string };
 
 function randomPos(excluded: Pos[]): Pos {
