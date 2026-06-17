@@ -80,13 +80,11 @@ export function useSnake(onGameOver: (score: number, time: number) => void, leve
   const tick = LEVELS[levelIdx].tick;
   const initSnake: Pos[] = [{ x: 10, y: 10 }, { x: 9, y: 10 }, { x: 8, y: 10 }];
   const initFood = randomPos(initSnake);
-  const initFood2 = randomPos([...initSnake, initFood]);
   const initObstacles = generateObstacles(initSnake, initFood);
   const initPredator: Pos = { x: 0, y: 0 };
 
   const [snake, setSnake] = useState<Pos[]>(initSnake);
   const [food, setFood] = useState<Pos>(initFood);
-  const [food2, setFood2] = useState<Pos>(initFood2);
   const [obstacles, setObstacles] = useState<Pos[]>(initObstacles);
   const [predator, setPredator] = useState<Pos>(initPredator);
   const [score, setScore] = useState(0);
@@ -104,7 +102,6 @@ export function useSnake(onGameOver: (score: number, time: number) => void, leve
   // refs for use inside callbacks
   const snakeRef = useRef(initSnake);
   const foodRef = useRef(initFood);
-  const food2Ref = useRef(initFood2);
   const obstaclesRef = useRef(initObstacles);
   const predatorRef = useRef(initPredator);
   const scoreRef = useRef(0);
@@ -163,27 +160,18 @@ export function useSnake(onGameOver: (score: number, time: number) => void, leve
     // Food collision
     let newSnake: Pos[];
     const f = foodRef.current;
-    const f2 = food2Ref.current;
     if (f.x === next.x && f.y === next.y) {
       const grown = [next, ...prev];
       newSnake = grown;
       scoreRef.current += 10;
       setScore(scoreRef.current);
-      const newFood = randomPos([...grown, ...obs, f2]);
+      const newFood = randomPos([...grown, ...obs]);
       foodRef.current = newFood;
       setFood(newFood);
       // Refresh obstacles on each food eat
       const newObs = generateObstacles(grown, newFood);
       obstaclesRef.current = newObs;
       setObstacles(newObs);
-    } else if (f2.x === next.x && f2.y === next.y) {
-      const grown = [next, ...prev];
-      newSnake = grown;
-      scoreRef.current += 10;
-      setScore(scoreRef.current);
-      const newFood2 = randomPos([...grown, ...obs, f]);
-      food2Ref.current = newFood2;
-      setFood2(newFood2);
     } else {
       newSnake = [next, ...prev.slice(0, -1)];
     }
@@ -228,5 +216,5 @@ export function useSnake(onGameOver: (score: number, time: number) => void, leve
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  return { snake, food, food2, score, elapsed, cols: COLS, rows: ROWS, predator, obstacles, slowed };
+  return { snake, food, score, elapsed, cols: COLS, rows: ROWS, predator, obstacles, slowed };
 }
